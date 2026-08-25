@@ -1,0 +1,50 @@
+name: build-openvpn2socks-linux
+
+on:
+  push:
+    branches:
+      - build/openvpn2socks-linux
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-amd64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: cmd/openvpn2socks/go.mod
+          cache-dependency-path: cmd/openvpn2socks/go.sum
+
+      - name: Build static Linux amd64 binary
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p dist
+          cd cmd/openvpn2socks
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+            go build -trimpath -ldflags='-s -w' \
+            -o ../../dist/openvpn2socks-linux-amd64 .
+          cd ../..
+          chmod +x dist/openvpn2socks-linux-amd64
+          dist/openvpn2socks-linux-amd64 -h >/dev/null
+          sha256sum dist/openvpn2socks-linux-amd64 > dist/openvpn2socks-linux-amd64.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: openvpn2socks-linux-amd64
+          path: |
+            dist/openvpn2socks-linux-amd64
+            dist/openvpn2socks-linux-amd64.sha256
+          if-no-files-found: error
+          retention-days: 7

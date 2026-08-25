@@ -3,6 +3,7 @@ name: build-openvpn2socks-linux
 on:
   push:
     branches:
+      - master
       - build/openvpn2socks-linux
   pull_request:
     branches:
